@@ -18,4 +18,4 @@ else:
     sys.exit(0)
 
 image = Image.open(inf)
-upscaler(image).save(outf)
+upscaler(image, 0.1).save(outf)

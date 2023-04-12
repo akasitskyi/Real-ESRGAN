@@ -3,7 +3,7 @@ from .model import RealESRGAN
 
 from PIL import Image
 import numpy as np
-
+import skimage
 
 
 class Upscaler4x:
@@ -16,5 +16,5 @@ class Upscaler4x:
         img = self.model.predict(image)
         if noise_var > 0:
             npimg = skimage.util.random_noise(np.array(img), mode="gaussian", var=noise_var)
-            img = Image.fromarray(npimg)
+            img = Image.fromarray(np.uint8(255 * npimg))
         return img

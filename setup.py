@@ -11,6 +11,8 @@ setup(
     author="Sberbank AI, Xintao Wang",
     url='https://github.com/ai-forever/Real-ESRGAN',
     packages=find_packages(include=['RealESRGAN']),
+    package_data={'': ['RealESRGAN_x4.pth']},
+    include_package_data=True,
     install_requires=[
         str(r)
         for r in pkg_resources.parse_requirements(
