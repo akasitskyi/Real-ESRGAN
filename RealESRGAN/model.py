@@ -4,49 +4,27 @@ from torch.nn import functional as F
 from PIL import Image
 import numpy as np
 import cv2
-from huggingface_hub import hf_hub_url, cached_download
 
 from .rrdbnet_arch import RRDBNet
 from .utils import pad_reflect, split_image_into_overlapping_patches, stich_together, \
                    unpad_image
 
-
-HF_MODELS = {
-    2: dict(
-        repo_id='sberbank-ai/Real-ESRGAN',
-        filename='RealESRGAN_x2.pth',
-    ),
-    4: dict(
-        repo_id='sberbank-ai/Real-ESRGAN',
-        filename='RealESRGAN_x4.pth',
-    ),
-    8: dict(
-        repo_id='sberbank-ai/Real-ESRGAN',
-        filename='RealESRGAN_x8.pth',
-    ),
-}
+import importlib.resources as pkg_resources
 
 
 class RealESRGAN:
-    def __init__(self, device, scale=4):
+    def __init__(self, device):
         self.device = device
-        self.scale = scale
+        self.scale = 4
         self.model = RRDBNet(
             num_in_ch=3, num_out_ch=3, num_feat=64, 
-            num_block=23, num_grow_ch=32, scale=scale
+            num_block=23, num_grow_ch=32, scale=self.scale
         )
-        
-    def load_weights(self, model_path, download=True):
-        if not os.path.exists(model_path) and download:
-            assert self.scale in [2,4,8], 'You can download models only with scales: 2, 4, 8'
-            config = HF_MODELS[self.scale]
-            cache_dir = os.path.dirname(model_path)
-            local_filename = os.path.basename(model_path)
-            config_file_url = hf_hub_url(repo_id=config['repo_id'], filename=config['filename'])
-            cached_download(config_file_url, cache_dir=cache_dir, force_filename=local_filename)
-            print('Weights downloaded to:', os.path.join(cache_dir, local_filename))
-        
-        loadnet = torch.load(model_path)
+
+    def load_weights(self):
+        loadnet = torch.load(pkg_resources.open_binary(__package__, 'RealESRGAN_x4.pth'))
+
+        #loadnet = torch.load(model_path)
         if 'params' in loadnet:
             self.model.load_state_dict(loadnet['params'], strict=True)
         elif 'params_ema' in loadnet:
@@ -55,7 +33,7 @@ class RealESRGAN:
             self.model.load_state_dict(loadnet, strict=True)
         self.model.eval()
         self.model.to(self.device)
-        
+
     @torch.cuda.amp.autocast()
     def predict(self, lr_image, batch_size=4, patches_size=192,
                 padding=24, pad_size=15):
